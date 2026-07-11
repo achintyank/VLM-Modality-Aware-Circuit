@@ -6,9 +6,9 @@ Qwen2-VL-2B-Instruct). Uses the aggregate numbers from the run; no model needed.
 import matplotlib.pyplot as plt
 
 # --- aggregate results from the 50-image run (caption tokens only) ---
-n_vision, n_caption = 17243, 5779
-total_vision, total_caption = 2_735_271.2, 948_539.8
-avg_vision, avg_caption = 158.63, 164.14
+n_vision, n_caption = 17619, 5097
+total_vision, total_caption = 2_769_132.7, 830_582.1
+avg_vision, avg_caption = 157.17, 162.96
 
 labels = ["Vision", "Caption"]
 colors = ["#4C72B0", "#DD8452"]  # blue = vision, orange = caption

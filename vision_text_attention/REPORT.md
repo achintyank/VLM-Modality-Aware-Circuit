@@ -48,19 +48,19 @@ larger than 800 vision tokens are skipped. Reductions accumulate in float32.
 
 | Metric                     |     Vision |    Caption |
 | -------------------------- | ---------: | ---------: |
-| Number of tokens           |     17,243 |      5,779 |
-| Total attention received   | 2,735,271.2 |  948,539.8 |
-| Average attention / token  |    158.63  |    164.14  |
+| Number of tokens           |     17,619 |      5,097 |
+| Total attention received   | 2,769,132.7 |  830,582.1 |
+| Average attention / token  |    157.17  |    162.96  |
 
 Derived shares:
 
 | Share                | Vision | Caption |
 | -------------------- | -----: | ------: |
-| % of all tokens      | 74.9%  | 25.1%   |
-| % of all attention   | 74.3%  | 25.7%   |
+| % of all tokens      | 77.6%  | 22.4%   |
+| % of all attention   | 76.9%  | 23.1%   |
 
-- Vision tokens per image: mean ≈ 345 (capped at 800).
-- Caption tokens per image: mean ≈ 116 — the detailed `vlm_caption` gives a
+- Vision tokens per image: mean ≈ 352 (capped at 800).
+- Caption tokens per image: mean ≈ 102 — the detailed `vlm_caption` gives a
   substantial, fair text side (vs. ~22 tokens for the short alt-text captions).
 
 ## 4. Results — Per Layer
@@ -80,12 +80,12 @@ Derived shares:
 ## 5. Key Findings
 
 1. **Per token, vision and caption are attended essentially equally.** Vision
-   averages **158.6** and caption **164.1** per token — caption is marginally
-   higher (**1.03×**). Neither modality is meaningfully favored once content
+   averages **157.2** and caption **163.0** per token — caption is marginally
+   higher (**1.04×**). Neither modality is meaningfully favored once content
    tokens are compared fairly.
 
-2. **Attention tracks token count almost perfectly.** Vision holds 74.9% of
-   tokens and 74.3% of attention; caption holds 25.1% of tokens and 25.7% of
+2. **Attention tracks token count almost perfectly.** Vision holds 77.6% of
+   tokens and 76.9% of attention; caption holds 22.4% of tokens and 23.1% of
    attention. The model distributes attention in near-exact proportion to how
    many tokens each modality contributes.
 
@@ -125,7 +125,7 @@ Derived shares:
 In Qwen2-VL-2B, once the attention-sink artifact is removed and only content
 tokens are compared, self-attention is split between vision and caption tokens in
 near-exact proportion to their counts, with essentially **equal per-token
-attention** (caption 1.03× vision). The vision/caption balance shifts across
+attention** (caption 1.04× vision). The vision/caption balance shifts across
 depth — caption leads clearly in the first two layers, then the two track each
 other closely through the rest of the network — but neither modality dominates
 the other per token. The central methodological lesson stands: **isolating
