@@ -1,14 +1,16 @@
 """
-Per-layer attention trend: vision vs. caption tokens across all 28 layers.
+Per-layer attention trend: vision vs. caption tokens across all layers.
 Reads layer_attention.npz saved by attention_experiment.py.
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.load("layer_attention.npz")
+data = np.load("layer_attention.npz", allow_pickle=True)
 n_images = int(data["n_images"])
 layers = np.arange(len(data["vision_layer"]))
+# model name is data-driven if the run saved it, else Qwen label
+model_name = str(data["model_id"]) if "model_id" in data.files else "Qwen2-VL-2B-Instruct"
 
 fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
 
@@ -31,10 +33,11 @@ for ax in axes:
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.grid(alpha=0.3)
+    ax.set_xticks(layers)  # one tick per integer layer (0, 1, 2, ...)
 
 fig.suptitle(
     f"Attention across layers: vision vs. caption\n"
-    f"Qwen2-VL-2B-Instruct, {n_images} PixelProse images",
+    f"{model_name}, {n_images} PixelProse images",
     fontsize=12,
 )
 fig.tight_layout(rect=[0, 0, 1, 0.9])

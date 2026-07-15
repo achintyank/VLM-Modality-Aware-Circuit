@@ -1,6 +1,6 @@
 """
 Experiment: measure total attention mass allocated to text vs vision tokens
-in a VLM (Qwen2-VL-2B-Instruct).
+in a VLM (PaliGemma-3B, google/paligemma-3b-pt-224).
 
 Pure PyTorch + HuggingFace transformers. No nnsight / TransformerLens.
 """
@@ -25,7 +25,7 @@ torch.set_num_threads(4)
 
 from transformers import (
     AutoProcessor,
-    Qwen2VLForConditionalGeneration,
+    PaliGemmaForConditionalGeneration,
 )
 
 from PIL import Image
@@ -34,13 +34,13 @@ from PIL import Image
 # ---------------------------------------------------------------------------
 # Load model + processor
 # ---------------------------------------------------------------------------
-MODEL_ID = "Qwen/Qwen2-VL-2B-Instruct"
+MODEL_ID = "google/paligemma-3b-pt-224"
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-# bfloat16 on CPU halves the weight footprint (~8GB -> ~4GB) so it fits in 16GB.
+# bfloat16 on CPU halves the weight footprint (3B: ~12GB -> ~6GB) so it fits in 16GB.
 dtype = torch.float16 if device == "cuda" else torch.bfloat16
 
-model = Qwen2VLForConditionalGeneration.from_pretrained(
+model = PaliGemmaForConditionalGeneration.from_pretrained(
     MODEL_ID,
     torch_dtype=dtype,
     attn_implementation="eager",  # needed to get attention weights back
@@ -124,21 +124,12 @@ def build_inputs(image, caption):
     """
     cap_prefix = "Caption: "
     prompt = f"{cap_prefix}{caption}\n\n{QUESTION}"
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {"type": "image", "image": image},
-                {"type": "text", "text": prompt},
-            ],
-        }
-    ]
-    text = processor.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=True
-    )
+    # PaliGemma is not a chat model, so there is no chat template: feed the raw
+    # prompt. The processor prepends the fixed image tokens (256 for 224 res) and
+    # a <bos>, then appends a trailing "\n". No <image> marker goes in the text.
     inputs = processor(
-        text=[text],
-        images=[image],
+        images=image,
+        text=prompt,
         return_tensors="pt",
     ).to(device)
 
@@ -204,13 +195,13 @@ for sample in dataset:
         print("  ! caption tokens not located, skipping")
         continue  # bad span, skip (does not count toward the 50)
 
-    n_vis = int((inputs["input_ids"][0] == model.config.image_token_id).sum())
+    n_vis = int((inputs["input_ids"][0] == model.config.image_token_index).sum())
     if n_vis > MAX_VISION_TOKENS:
         print(f"  ! {n_vis} vision tokens > {MAX_VISION_TOKENS}, skipping big image")
         continue  # too big, skip before the expensive forward pass
 
     # --- masks: vision patches vs. caption tokens only ---
-    image_token_id = model.config.image_token_id
+    image_token_id = model.config.image_token_index
     ids = inputs["input_ids"][0]                 # [seq_len]
     vision_mask = ids == image_token_id          # True where token is a vision patch
     # caption_mask (from build_inputs) is True only on the caption tokens,
@@ -308,6 +299,7 @@ np.savez(
     vision_layer_pertok=vision_layer_pertok,
     caption_layer_pertok=caption_layer_pertok,
     n_images=len(results),
+    model_id=MODEL_ID,
 )
 print("saved layer_attention.npz")
 
