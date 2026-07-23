@@ -150,3 +150,26 @@ for i, (image, caption) in enumerate(pairs):
         f"n_cap={int(caption_mask.sum())}, n_vis={int(vision_mask.sum())}"
     )
 
+
+# ---------------------------------------------------------------------------
+# Candidate modality vectors: per layer, mean(text) - mean(image)
+# ---------------------------------------------------------------------------
+# Per-pair mean FIRST (each pair -> one vector by averaging its tokens), THEN
+# average the 50 per-pair vectors. This weights every image equally, so long
+# captions don't dominate. mu_text, mu_img are [d_model]; their difference is the
+# candidate modality vector. (float() so fp16 means don't lose precision.)
+candidates = {}
+for L in range(1, N_LAYERS + 1):
+    # each matrix [n_tokens_of_pair, d_model] -> [d_model] per pair, then stack 50
+    text_per_pair = torch.stack([m.float().mean(dim=0) for m in text_rows[L]])   # [50, d_model]
+    image_per_pair = torch.stack([m.float().mean(dim=0) for m in image_rows[L]]) # [50, d_model]
+    mu_text = text_per_pair.mean(dim=0)   # [d_model]
+    mu_img = image_per_pair.mean(dim=0)   # [d_model]
+    candidates[L] = mu_text - mu_img      # text - image
+
+CANDIDATE_LAYERS = [3, 14, 26]
+v3, v14, v26 = (candidates[L] for L in CANDIDATE_LAYERS)
+
+for L, v in zip(CANDIDATE_LAYERS, (v3, v14, v26)):
+    print(f"candidate v{L}: shape={tuple(v.shape)}, norm={v.norm():.3f}")
+
